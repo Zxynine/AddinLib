@@ -28,6 +28,7 @@ import adsk.core, adsk.fusion, adsk.cam
 import inspect
 import os, re, json
 import importlib
+from tkinter import Tk
 
 from . import AppObjects
 
@@ -142,6 +143,11 @@ def deleteAll(*objs): return all(map(ifDelete,objs))
 
 def executeCommand(cmdName):  AppObjects.GetUi().commandDefinitions.itemById(cmdName).execute()
 
+class Scripts:
+	"""Wrapper for adsk autoTerminate/terminate used in scripts"""
+	def DontTerminate(): return adsk.autoTerminate(False)
+	def Terminate(): return adsk.terminate()
+
 def doEvents(): return adsk.doEvents()
 
 
@@ -156,3 +162,24 @@ class camera:
 		camera_copy.isSmoothTransition = smoothTransition
 		AppObjects.GetApp().activeViewport.camera = camera_copy
 		doEvents()
+
+
+
+class Ignore:
+	def __init__(self, *errorTypes):
+		self.errorTypes = errorTypes
+	def __enter__(self):return self
+	def __exit__(self, type, value, traceback):
+		return type in self.errorTypes
+
+
+
+
+
+def copy_to_clipboard(string):
+	# copy_input.value = False
+	# From https://stackoverflow.com/a/25476462/106019
+	r = Tk(); r.withdraw()
+	r.clipboard_clear(); r.clipboard_append(string)
+	r.update(); r.destroy() 
+	# now it stays on the clipboard after the window is closed
