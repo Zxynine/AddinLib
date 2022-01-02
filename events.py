@@ -30,7 +30,6 @@
 import adsk.core, adsk.fusion, adsk.cam
 import sys, time
 import threading
-from typing import List
 # Avoid Fusion namespace pollution
 from . import error, utils, AppObjects
 
@@ -57,7 +56,7 @@ AUTO_HANDLER_CLASS = None
 class EventsManager:
 	def __init__(self, error_catcher=None):
 		#Declared in init to allow multiple commands to use a single lib
-		self.handlers: List[LinkedHandler] = []
+		self.handlers: 'list[LinkedHandler]' = []
 		self.custom_event_names = []
 		self.app, self.ui = AppObjects.GetAppUI()
 
@@ -71,10 +70,9 @@ class EventsManager:
 	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	def add_handler(self, event:adsk.core.CommandEvent, callback=None, base_class=AUTO_HANDLER_CLASS):
 		"""`AUTO_HANDLER_CLASS` results in:
-		  1: Getting the classType
-		  2: Adding 'Handler' to the end and Splitting at '::'
-		  3: Getting the module using the first segment
-		  4: sets baseClass to the return of getattr using the base and all subsequent segments"""
+		  1: Adding 'Handler' to the end of the classType and Splitting at '::'
+		  2: Getting the module using the first segment
+		  3: sets baseClass to the return of getattr using the base and all subsequent segments"""
 		if base_class == AUTO_HANDLER_CLASS:
 			handler_class_parts = f'{event.classType()}Handler'.split('::')
 			base_class = sys.modules[handler_class_parts.pop(0)]
@@ -130,17 +128,17 @@ class EventsManager:
 
 	#Removing
 	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	def remove_handler(self, *handler_infos: LinkedHandler):
-		for handler_info in handler_infos:
-			handler_info.remove()
-			self.handlers.remove(handler_info)
+	def remove_handler(self, handler_info: LinkedHandler):
+		handler_info.remove();self.handlers.remove(handler_info)
+	def remove_handlers(self, *handler_infos: 'list[LinkedHandler]'):
+		map(self.remove_handler, handler_infos)
 
 	def remove_handler_by_event(self, event: adsk.core.CommandEvent):
 		handler = self.find_handler_by_event(event)
 		self.remove_handler((handler, event))
 
 	def remove_all_handlers(self):
-		for linkedHandler in self.handlers: linkedHandler.remove()
+		map(LinkedHandler.remove, self.handlers)
 		self.handlers.clear()
 
 	def unregister_all_events(self):
@@ -150,8 +148,7 @@ class EventsManager:
 	def clean_up(self, oldControl = None):
 		"""`oldControl` is an optional variable that, if/when provided, the function: \\
 		`utils.clear_ui_items(oldControl)`  is called, which attempts to remove the control after cleanup"""
-		self.remove_all_handlers()
-		self.unregister_all_events()
+		self.remove_all_handlers(); self.unregister_all_events()
 		if oldControl is not None: utils.clear_ui_items(oldControl)
 
 

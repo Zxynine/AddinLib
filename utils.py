@@ -32,6 +32,20 @@ from tkinter import Tk
 
 from . import AppObjects
 
+
+
+
+def toIdentifier(toId: str, toUnder:set={'-',' '}): return ''.join(['_'*(c in toUnder) or c*(c.isidentifier()) for c in toId])
+
+def exists(obj):return obj is not None
+def ifDelete(obj:adsk.core.CommandControl): return obj.deleteMe() if exists(obj) and obj.isValid else False
+def getDelete(collection:adsk.core.CommandDefinitions,objId): ifDelete(collection.itemById(objId))
+def deleteAll(*objs): return all(map(ifDelete,objs))
+
+
+
+
+
 def short_class(obj:adsk.core.Base):
     '''Returns shortened name of Object class'''
     return obj.classType().split('::')[-1]
@@ -45,8 +59,7 @@ def get_fusion_deploy_folder():
      * Mac: /Users/<user>/Library/Application Support/Autodesk/webdeploy/production/<hash>
 
     NOTE! The structure within the deploy folder is not the same on Windows and Mac!
-    E.g. see the examples for get_fusion_ui_resource_folder().
-    '''
+    E.g. see the examples for get_fusion_ui_resource_folder().    '''
     # Strip the suffix from the UI resource folder, i.e.:
     # Windows: /Fusion/UI/FusionUI/Resources
     # Mac: /Autodesk Fusion 360.app/Contents/Libraries/Applications/Fusion/Fusion/UI/FusionUI/Resources
@@ -69,28 +82,22 @@ def get_fusion_ui_resource_folder():
 def get_caller_path():
     '''Gets the filename of the file calling the function
     that called this function. That is, is nested in "two steps". '''
-    caller_file = os.path.abspath(inspect.stack(0)[2][1])
-    return caller_file
+    return os.path.abspath(inspect.stack(0)[2][1])
 
 def get_file_path():
-    '''Gets the filename of the function that called this
-    function.'''
-    caller_file = os.path.abspath(inspect.stack(0)[1][1])
-    return caller_file
+    '''Gets the filename of the function that called this function.'''
+    return os.path.abspath(inspect.stack(0)[1][1])
 
 def get_file_dir():
-    '''Gets the directory containing the file which function
-    called this function.'''
-    caller_file = os.path.dirname(os.path.abspath(inspect.stack(0)[1][1]))
-    return caller_file
+    '''Gets the directory containing the file which function called this function.'''
+    return os.path.dirname(os.path.abspath(inspect.stack(0)[1][1]))
 
 # Allows for re-import of multiple modules
-def ReImport_List(*args):
-	for module in args: importlib.reload(module)
+def ReImport_List(*args): map(importlib.reload, args)
 
 def clear_ui_items(*items):
 	"""Attempts to call 'deleteMe()' on every item provided. Returns True if all deletions are a success"""
-	return all([item.deleteMe() for item in items if item is not None])
+	return deleteAll(items)
 
 
 def is_parametric_mode():
@@ -106,7 +113,6 @@ def is_parametric_mode():
 
 
 #This is a context manager that just ignores what happens
-class Ignore:__enter__=lambda cls:cls;__exit__=lambda *args:True
 
 # def AppObjects(): return GetApp(),GetUi()
 # def GetApp(): return adsk.core.Application.cast(adsk.core.Application.get())
@@ -121,9 +127,8 @@ class CustomEvents:
 		return app.registerCustomEvent(CustomEventID)
 		
 	def Fire(CustomEventID:str, additionalInfo='', toJsonStr=False):
-		if not toJsonStr: strInfo = additionalInfo
-		else: strInfo = json.dumps(additionalInfo)
-		return AppObjects.GetApp().fireCustomEvent(CustomEventID, strInfo)
+		return AppObjects.GetApp().fireCustomEvent(CustomEventID, 
+			additionalInfo if not toJsonStr else json.dumps(additionalInfo))
 
 	def Remove(CustomEventID:str):
 		return AppObjects.GetApp().unregisterCustomEvent(CustomEventID)
@@ -133,13 +138,6 @@ class CustomEvents:
 
 
 
-
-def toIdentifier(toId: str, toUnder:set={'-',' '}): return ''.join(['_'*(c in toUnder) or c*(c.isidentifier()) for c in toId])
-
-def exists(obj):return obj is not None
-def ifDelete(obj:adsk.core.CommandControl): return obj.deleteMe() if exists(obj) and obj.isValid else False
-def getDelete(collection:adsk.core.CommandDefinitions,objId): ifDelete(collection.itemById(objId))
-def deleteAll(*objs): return all(map(ifDelete,objs))
 
 def executeCommand(cmdName):  AppObjects.GetUi().commandDefinitions.itemById(cmdName).execute()
 
@@ -166,19 +164,16 @@ class camera:
 
 
 class Ignore:
-	def __init__(self, *errorTypes):
-		self.errorTypes = errorTypes
+	def __init__(self, *types): self.types=types
 	def __enter__(self):return self
-	def __exit__(self, type, value, traceback):
-		return type in self.errorTypes
+	def __exit__(self,ExType,ExVal,ExTrace): 
+		return self.types or ExType in self.types
 
 
 
 
-
+# From https://stackoverflow.com/a/25476462/106019
 def copy_to_clipboard(string):
-	# copy_input.value = False
-	# From https://stackoverflow.com/a/25476462/106019
 	r = Tk(); r.withdraw()
 	r.clipboard_clear(); r.clipboard_append(string)
 	r.update(); r.destroy() 
