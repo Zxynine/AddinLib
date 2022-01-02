@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 
 
+<<<<<<< HEAD
 
 # def StringInstantiator(count): return ['']*count
 # (USER_DIR, DESKTOP_DIR, TEMP_DIR, APPDATA_DIR, LOCAL_APPDATA_DIR, 
@@ -17,6 +18,8 @@ import tempfile
 
 
 
+=======
+>>>>>>> a66cff6de302a89900709c1edfb9a4f989102fc5
 def getOS() -> str:
 	osMap = dict( 	Windows='Windows',	win32='Windows',
 					Darwin='Darwin',	Linux='Linux')
@@ -50,6 +53,7 @@ NEUTRON_OPTIONS=USER_OPTIONS_DIR=''
 
 
 
+<<<<<<< HEAD
 from xml.etree import ElementTree as XML
 def XMLRead(dir,file): return XML.parse(os.path.join(dir,file))
 def XMLRoot(dir,file): return XMLRead(dir,file).getroot()
@@ -135,6 +139,16 @@ class GetDisplayLayouts:
 		TREE.write(cls.FileName(userOptionsPath))
 		return True
 
+=======
+from xml.etree import ElementTree as XMLTree
+def getUserID(neutronPath):
+	optionsFile = os.path.join(neutronPath,'NMachineSpecificOptions.xml')
+	return XMLTree.parse(optionsFile).getroot().find('./NetworkOptionGroup/LastUserOptionId').attrib['Value']
+
+def getUserHotkeys(userOptionsPath)->'list[dict["commands":list,"hotkey_sequence":"A+B+C", "isDefault":bool]]':#command_argument
+	optionsFile = os.path.join(userOptionsPath,'NGlobalOptions.xml')
+	return json.loads(XMLTree.parse(optionsFile).getroot().find('./HotKeyGroup/HotKeyJSONString').attrib['Value'])['hotkeys']
+>>>>>>> a66cff6de302a89900709c1edfb9a4f989102fc5
 
 
 def join(*args): 
@@ -171,8 +185,14 @@ if __name__ == '__main__':
 	print(	USER_DIR,DESKTOP_DIR,APPDATA_DIR,TEMP_DIR, '\n',
 			AUTODESK_DIR,PLUGINS_DIR,SCRIPTS_DIR,ADDINS_DIR,'\n',
 			NEUTRON_OPTIONS,USER_OPTIONS_DIR,'\n', sep='\n')
+<<<<<<< HEAD
 	# print(len(getCommandLayouts(USER_OPTIONS_DIR)))
 	# print(len(GetDisplayLayouts.resized()))
 	# print(len(GetDisplayLayouts.commands()))
 	# GetDisplayLayouts.setInitialSize("thomasa88_keyboardShortcutsSimpleList",600, 650)
 	# GetDisplayLayouts.setMinimumSize("thomasa88_keyboardShortcutsSimpleList",450, 500)
+=======
+# getUserHotkeys(USER_OPTIONS_DIR)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>>>>>> a66cff6de302a89900709c1edfb9a4f989102fc5
