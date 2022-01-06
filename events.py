@@ -30,7 +30,6 @@
 import adsk.core, adsk.fusion, adsk.cam
 import sys, time
 import threading
-from typing import List
 # Avoid Fusion namespace pollution
 from . import error, utils, AppObjects
 
@@ -57,9 +56,10 @@ AUTO_HANDLER_CLASS = None
 class EventsManager:
 	def __init__(self, error_catcher=None):
 		#Declared in init to allow multiple commands to use a single lib
-		self.handlers: List[LinkedHandler] = []
+		self.handlers: 'list[LinkedHandler]' = []
 		self.custom_event_names = []
 		self.app, self.ui = AppObjects.GetAppUI()
+		self.CustomEvents = utils.CustomEvents
 
 		self.next_delay_id = 0
 		self.delayed_funcs = {}
@@ -71,10 +71,9 @@ class EventsManager:
 	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	def add_handler(self, event:adsk.core.CommandEvent, callback=None, base_class=AUTO_HANDLER_CLASS):
 		"""`AUTO_HANDLER_CLASS` results in:
-		  1: Getting the classType
-		  2: Adding 'Handler' to the end and Splitting at '::'
-		  3: Getting the module using the first segment
-		  4: sets baseClass to the return of getattr using the base and all subsequent segments"""
+		  1: Adding 'Handler' to the end of the classType and Splitting at '::'
+		  2: Getting the module using the first segment
+		  3: sets baseClass to the return of getattr using the base and all subsequent segments"""
 		if base_class == AUTO_HANDLER_CLASS:
 			handler_class_parts = f'{event.classType()}Handler'.split('::')
 			base_class = sys.modules[handler_class_parts.pop(0)]
@@ -91,8 +90,7 @@ class EventsManager:
 	
 	def register_event(self, name):
 		# Clears and then starts the event (makes sure there is not an old event registered due to a bad stop)
-		self.app.unregisterCustomEvent(name)
-		event = self.app.registerCustomEvent(name)
+		event = self.CustomEvents.Create(name)
 		if event: self.custom_event_names.append(name)
 		return event
 
@@ -111,17 +109,17 @@ class EventsManager:
 			self.add_handler(self.delayed_event, callback=self._delayed_event_handler)
 		delay_id = self.next_delay_id
 		self.next_delay_id += 1
-
+		
 		def waiter():
 			time.sleep(secs)
-			self.app.fireCustomEvent(self.delayed_event_id, str(delay_id))
+			self.CustomEvents.Fire(self.delayed_event_id, str(delay_id))
 		self.delayed_funcs[delay_id] = func
 
 		if secs > 0:
 			thread = threading.Thread(target=waiter)
 			thread.isDaemon = True
 			thread.start()
-		else: self.app.fireCustomEvent(self.delayed_event_id, str(delay_id))    
+		else: self.CustomEvents.Fire(self.delayed_event_id, str(delay_id))
 
 	def _delayed_event_handler(self, args: adsk.core.CustomEventArgs):
 		delay_id = int(args.additionalInfo)
@@ -144,7 +142,7 @@ class EventsManager:
 		self.handlers.clear()
 
 	def unregister_all_events(self):
-		map(self.app.unregisterCustomEvent, self.custom_event_names)
+		map(self.CustomEvents.Remove, self.custom_event_names)
 		self.custom_event_names.clear()
 
 	def clean_up(self, oldControl = None):
@@ -153,6 +151,3 @@ class EventsManager:
 		self.remove_all_handlers()
 		self.unregister_all_events()
 		if oldControl is not None: utils.clear_ui_items(oldControl)
-
-
-
