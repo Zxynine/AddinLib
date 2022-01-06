@@ -9,6 +9,37 @@ import re, sys
 from . import utils, AppObjects
 from functools import wraps
 
+
+
+
+""" # Only keep the AddIns/Scripts part of the path
+	C:/Users/ZXYNI/AppData/Roaming/Autodesk/Autodesk Fusion 360/API/AddIns/CommandManager\AddinUtil\ErrorUtilities.py
+	>>> caller = re.sub(r'.*API[/\\]', '', self.callerPath)
+	AddIns\CommandManager\AddinUtil\ErrorUtilities.py
+	
+	# Shorten file paths, to compact the message
+	>>> traceString = ''.join(traceback.format_exception(exctype, value, traceb))
+
+	# Attempt to scrub the user's username from the traceback, if any remains """
+
+def GetTraceString(exctype, value, traceb):
+	traceString = '\u200b'.join(traceback.format_exception(exctype, value, traceb))
+	traceString = re.sub(r'"[^"]+/(?:API/AddIns|Api/Python)', '"', traceString)
+	return traceString.replace(getpass.getuser(),'<user>').replace('\\','\\\u200b').replace('/','/\u200b')
+	
+def GetMessage(PreMessage,ErrorValue, callerPath, FusionVersion, TraceString):
+	# Only keep the AddIns/Scripts part of the path
+	caller = re.sub(r'.*API[/\\]','',callerPath)
+	return (f'{PreMessage} error: {ErrorValue}\n\n' +
+			'Copy this message by taking a screenshot. ' +
+			'Describe what you did to get this error or record a video.\n\n' +
+			f'{"-"*50}\n\n'+
+			f'Fusion 360 v. {FusionVersion}\n' +
+			f'{caller} failed: \n\n' + TraceString)
+
+
+
+
 class ErrorCatcher():
 	'''	Showing a messagebox is disabled in debugging, by default,
 		to avoid the case where Fusion is stopped and the debugger
@@ -36,37 +67,18 @@ class ErrorCatcher():
 		self.msg_prefix = msg_prefix
 
 	def __call__(self, func, blockFuncSelf=False):
-		if not blockFuncSelf:
-			@wraps(func)
-			def wrapper(*args,**kwds):
-				with self: func(*args, **kwds)
-		else:
-			@wraps(func)
-			def wrapper(func_self,*args,**kwds):
-				with self: func(*args, **kwds)
+		@wraps(func)
+		def wrapper(func_self=None,*args,**kwds):
+			if not blockFuncSelf and func_self: args = [func_self, *args]
+			with self: func(*args, **kwds)
 		return wrapper
 
 	def __enter__(self): self.caller_file = utils.get_caller_path()
 	def __exit__(self, exctype, value, traceb):
 		if not traceb: return
 		app ,ui = AppObjects.GetAppUI()
-
-		# Only keep the AddIns/Scripts part of the path
-		caller = re.sub(r'.*API[/\\]', '', self.caller_file)
-
-		tb_str = ''.join(traceback.format_exception(exctype, value, traceb))
-		# Shorten file paths, to compact the message
-		tb_str = re.sub(r'"[^"]+/(?:API/AddIns|Api/Python)', '"', tb_str)
-		# Attempt to scrub the user's username from the traceback, if any remains
-		# Add zero width spaces after slashes to allow it to be continued on another line
-		tb_str = tb_str.replace(getpass.getuser(), '<user>').replace('\\','\\\u200b').replace('/','/\u200b')
-
-		message = (f'{self.msg_prefix} error: {value}\n\n' +
-					'Copy this message by taking a screenshot. ' +
-					'Describe what you did to get this error or record a video.\n\n' +
-					'-' * 50 + '\n\n' +
-					f'Fusion 360 v. {app.version}\n' +
-					f'{caller} failed: \n\n' + tb_str)
+		tb_str = GetTraceString(exctype, value, traceb)
+		message = GetMessage(self.msg_prefix, value, self.caller_file, app.version, tb_str)
 		print(message)
 
 		in_debugger = hasattr(sys, 'gettrace') and sys.gettrace()

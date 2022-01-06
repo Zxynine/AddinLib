@@ -31,34 +31,47 @@ import adsk.core, adsk.fusion, adsk.cam
 import sys, time
 import threading
 # Avoid Fusion namespace pollution
-from . import error, utils, AppObjects
+from . import error, utils
 
+# Try to resolve base class automatically
+AUTO_HANDLER_CLASS = None
+HANDLER_MAP = {}
 
+"""`AUTO_HANDLER_CLASS` results in:
+1: Adding 'Handler' to the end of the classType and Splitting at '::'
+2: Getting the module using the first segment
+3: sets baseClass to the return of getattr using the base and all subsequent segments"""
+def buildHandler(event:str)-> 'adsk.core.EventHandler':
+	handler_class_parts = f'{event}Handler'.split('::')
+	base_class = sys.modules[handler_class_parts.pop(0)]
+	for cls in handler_class_parts: base_class = getattr(base_class, cls)
+	return base_class
 
-
+def getHandler(event:str)-> 'adsk.core.EventHandler':
+	base_class = HANDLER_MAP.get(event, None)
+	if base_class is not None: return base_class
+	return HANDLER_MAP.setdefault(event, buildHandler(event))
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 #Data Containers
 class LinkedHandler:
-	def __init__(self, event: adsk.core.CommandEvent, handler:type,callback:callable=None):
+	def __init__(self, event: adsk.core.CommandEvent, handler:type,manager:'EventsManager'=None,callback:callable=None):
 		self.event = event
 		self.handler = handler
 		self.callback = callback
+		self.manager = manager
 		if not event.add(handler): raise Exception(f'Failed to add the "{callback.__name__}" handler ')
 	def remove(self):
 		with utils.Ignore(): self.event.remove(self.handler)
 
 
 
-# Try to resolve base class automatically
-AUTO_HANDLER_CLASS = None
-
 class EventsManager:
 	def __init__(self, error_catcher=None):
 		#Declared in init to allow multiple commands to use a single lib
 		self.handlers: 'list[LinkedHandler]' = []
 		self.custom_event_names = []
-		self.app, self.ui = AppObjects.GetAppUI()
 		self.CustomEvents = utils.CustomEvents
 
 		self.next_delay_id = 0
@@ -70,21 +83,14 @@ class EventsManager:
 	#Assigning
 	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	def add_handler(self, event:adsk.core.CommandEvent, callback=None, base_class=AUTO_HANDLER_CLASS):
-		"""`AUTO_HANDLER_CLASS` results in:
-		  1: Adding 'Handler' to the end of the classType and Splitting at '::'
-		  2: Getting the module using the first segment
-		  3: sets baseClass to the return of getattr using the base and all subsequent segments"""
-		if base_class == AUTO_HANDLER_CLASS:
-			handler_class_parts = f'{event.classType()}Handler'.split('::')
-			base_class = sys.modules[handler_class_parts.pop(0)]
-			for cls in handler_class_parts: base_class = getattr(base_class, cls)
+		if base_class == AUTO_HANDLER_CLASS: base_class = getHandler(event.classType())
 
 		handler_name = f'{base_class.__name__}_{callback.__name__}'
 		handler_class = type(handler_name, (base_class,), {"notify": self.error_catcher(callback,True)})
 		handler_class.__init__ = lambda self: super(handler_class, self).__init__()
 		handler = handler_class()
 
-		handler_info = LinkedHandler(event, handler,callback)
+		handler_info = LinkedHandler(event, handler, callback)
 		self.handlers.append(handler_info)# Avoid garbage collection
 		return handler_info
 	
@@ -108,18 +114,17 @@ class EventsManager:
 			self.delayed_event = self.register_event(self.delayed_event_id)
 			self.add_handler(self.delayed_event, callback=self._delayed_event_handler)
 		delay_id = self.next_delay_id
+		self.delayed_funcs[delay_id] = func
 		self.next_delay_id += 1
-		
+		def fireEvent():self.CustomEvents.Fire(self.delayed_event_id, str(delay_id))
+
+		if secs <= 0: return fireEvent()
 		def waiter():
 			time.sleep(secs)
-			self.CustomEvents.Fire(self.delayed_event_id, str(delay_id))
-		self.delayed_funcs[delay_id] = func
-
-		if secs > 0:
-			thread = threading.Thread(target=waiter)
-			thread.isDaemon = True
-			thread.start()
-		else: self.CustomEvents.Fire(self.delayed_event_id, str(delay_id))
+			fireEvent()
+		thread = threading.Thread(target=waiter)
+		thread.isDaemon = True
+		thread.start()
 
 	def _delayed_event_handler(self, args: adsk.core.CustomEventArgs):
 		delay_id = int(args.additionalInfo)
@@ -128,26 +133,29 @@ class EventsManager:
 
 	#Removing
 	#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	def remove_handler(self, *handler_infos: LinkedHandler):
-		for handler_info in handler_infos:
-			handler_info.remove()
-			self.handlers.remove(handler_info)
+	def remove_handler(self, handler_info: LinkedHandler):
+		handler_info.remove();self.handlers.remove(handler_info)
+	def remove_handlers(self, *handler_infos: 'list[LinkedHandler]'):
+		map(self.remove_handler, handler_infos)
 
 	def remove_handler_by_event(self, event: adsk.core.CommandEvent):
 		handler = self.find_handler_by_event(event)
 		self.remove_handler((handler, event))
 
 	def remove_all_handlers(self):
-		for linkedHandler in self.handlers: linkedHandler.remove()
+		map(LinkedHandler.remove, self.handlers)
 		self.handlers.clear()
 
 	def unregister_all_events(self):
-		map(self.CustomEvents.Remove, self.custom_event_names)
+		self.CustomEvents.RemoveAll(self.custom_event_names)
 		self.custom_event_names.clear()
 
 	def clean_up(self, oldControl = None):
-		"""`oldControl` is an optional variable that, if/when provided, the function: \\
-		`utils.clear_ui_items(oldControl)`  is called, which attempts to remove the control after cleanup"""
 		self.remove_all_handlers()
 		self.unregister_all_events()
-		if oldControl is not None: utils.clear_ui_items(oldControl)
+
+
+#This should be a manager that lets you assign funcs to specific input changed events.
+class InputEvents:
+	def __init__(self) -> None:
+		pass
