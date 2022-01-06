@@ -25,6 +25,30 @@
 
 import adsk.core, adsk.fusion, adsk.cam
 
+
+FusionBRepEntity = (
+	adsk.fusion.BRepBody,
+	adsk.fusion.BRepLump,
+	adsk.fusion.BRepShell,
+	adsk.fusion.BRepFace,
+	adsk.fusion.BRepLoop,
+	adsk.fusion.BRepCoEdge,
+	adsk.fusion.BRepEdge,
+	adsk.fusion.BRepVertex,
+)
+
+HighlightableObjects = (
+	adsk.fusion.BRepEdge, 
+	adsk.fusion.BRepFace, 
+	adsk.core.Curve3D, 
+	adsk.fusion.BRepBody, 
+	adsk.fusion.Occurrence, 
+	adsk.core.Point3D,
+	adsk.fusion.Path,
+	adsk.fusion.PathEntity,
+)
+
+
 finiteGometry = (adsk.fusion.BRepEdge, adsk.fusion.SketchLine)
 infiniteGeometry = (adsk.fusion.ConstructionAxis,)
 

@@ -1,9 +1,8 @@
 # import adsk.core, adsk.fusion, adsk.cam
-import os,json
+import os,json,pathlib
 import platform as osInfo
 import subprocess
 import tempfile
-
 
 
 # def StringInstantiator(count): return ['']*count
@@ -45,7 +44,7 @@ def GetPath(fileDir, fileName):
 
 USER_DIR=DESKTOP_DIR=TEMP_DIR=APPDATA_DIR=''
 AUTODESK_DIR=PLUGINS_DIR=SCRIPTS_DIR=ADDINS_DIR=''
-NEUTRON_OPTIONS=USER_OPTIONS_DIR=''
+NEUTRON_OPTIONS=USER_OPTIONS_DIR=DEPLOY_DIR=''
 
 
 
@@ -62,7 +61,6 @@ def getUserID(neutronPath=None):
 def getUserHotkeys(userOptionsPath=None)->'list[dict]':#command_argument
 	XMLROOT = XMLRoot(userOptionsPath or USER_OPTIONS_DIR,'NGlobalOptions.xml')
 	return json.loads(XMLROOT.find('./HotKeyGroup/HotKeyJSONString').attrib['Value'])['hotkeys']
-
 
 
 
@@ -136,6 +134,23 @@ class GetDisplayLayouts:
 		return True
 
 
+def setSketchDimColour():
+	# This is the file for the current Fusion, but we try to catch the file for the newly downloaded Fusion, after an update.
+	#booth_file = (deploy_folder / 'Neutron' / 'Server' / 'Scene' / 'Resources' /
+	#              'Environments' / 'PhotoBooth' / 'photobooth.XML')
+	print(DEPLOY_DIR)
+	print(DEPLOY_DIR)
+	print(DEPLOY_DIR)
+	deploy_folder = pathlib.Path(DEPLOY_DIR)
+	prod_folder =  deploy_folder.parent
+
+	for booth_file in prod_folder.glob('*/Neutron/Server/Scene/Resources/Environments/PhotoBooth/photobooth.XML'):
+		xml = XML.parse(booth_file)
+		root = xml.getroot()
+		color_element = root.find('./SketchDimensionColor')
+		color_element.attrib['ARGB'] = '1 1 0 0'
+		xml.write(booth_file)
+
 
 def join(*args): 
 	newPath = os.path.join(*args)
@@ -153,7 +168,7 @@ ADDINS_DIR= 		join(AUTODESK_DIR,'Autodesk Fusion 360','API','AddIns')
 
 NEUTRON_OPTIONS=	join(AUTODESK_DIR,'Neutron Platform','Options')
 USER_OPTIONS_DIR=	join(NEUTRON_OPTIONS,getUserID(NEUTRON_OPTIONS))
-
+# DEPLOY_DIR=			join(AUTODESK_DIR,'webdeploy','production',getUserID(NEUTRON_OPTIONS))
 
 
 
@@ -170,9 +185,49 @@ def OpenFile(path):
 if __name__ == '__main__':
 	print(	USER_DIR,DESKTOP_DIR,APPDATA_DIR,TEMP_DIR, '\n',
 			AUTODESK_DIR,PLUGINS_DIR,SCRIPTS_DIR,ADDINS_DIR,'\n',
-			NEUTRON_OPTIONS,USER_OPTIONS_DIR,'\n', sep='\n')
+			NEUTRON_OPTIONS,USER_OPTIONS_DIR,DEPLOY_DIR,'\n', sep='\n')
 	# print(len(getCommandLayouts(USER_OPTIONS_DIR)))
 	# print(len(GetDisplayLayouts.resized()))
 	# print(len(GetDisplayLayouts.commands()))
 	# GetDisplayLayouts.setInitialSize("thomasa88_keyboardShortcutsSimpleList",600, 650)
 	# GetDisplayLayouts.setMinimumSize("thomasa88_keyboardShortcutsSimpleList",450, 500)
+
+
+	# setSketchDimColour()
+
+
+
+
+
+
+
+
+# def get_fusion_deploy_folder():
+# 	''' Get the Fusion 360 deploy folder.
+
+# 	Typically:
+# 	 * Windows: C:/Users/<user>/AppData/Local/Autodesk/webdeploy/production/<hash>
+# 	 * Mac: /Users/<user>/Library/Application Support/Autodesk/webdeploy/production/<hash>
+
+# 	NOTE! The structure within the deploy folder is not the same on Windows and Mac!
+# 	E.g. see the examples for get_fusion_ui_resource_folder().    '''
+# 	# Strip the suffix from the UI resource folder, i.e.:
+# 	# Windows: /Fusion/UI/FusionUI/Resources
+# 	# Mac: /Autodesk Fusion 360.app/Contents/Libraries/Applications/Fusion/Fusion/UI/FusionUI/Resources
+# 	_DEPLOY_FOLDER_PATTERN = re.compile(r'.*/webdeploy/production/[^/]+')
+# 	return _DEPLOY_FOLDER_PATTERN.match(get_fusion_ui_resource_folder()).group(0)
+
+# _resFolder = None
+# def get_fusion_ui_resource_folder():
+# 	'''
+# 	Get the Fusion UI resource folder. Note: Not all resources reside here.
+# 	Typically:
+# 	 * Windows: C:/Users/<user>/AppData/Local/Autodesk/webdeploy/production/<hash>/Fusion/UI/FusionUI/Resources
+# 	 * Mac: /Users/<user>/Library/Application Support/Autodesk/webdeploy/production/<hash>/Autodesk Fusion 360.app/Contents/Libraries/Applications/Fusion/Fusion/UI/FusionUI/Resources
+# 	'''
+# 	global _resFolder
+# 	if not _resFolder:
+# 		_resFolder = AppObjects.GetUi().workspaces.itemById('FusionSolidEnvironment').resourceFolder.replace('/Environment/Model', '')
+# 	return _resFolder
+
+#C:/Users/<user>/AppData/Local/Autodesk/webdeploy/production/<hash>  /Electron/UI/Resources/Icons/Copy'

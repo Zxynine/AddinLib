@@ -26,8 +26,9 @@
 import adsk.core, adsk.fusion, adsk.cam
 
 import inspect
-import os, re, json
+import os, json
 import importlib
+from typing import Iterable
 from tkinter import Tk
 
 from . import AppObjects
@@ -36,61 +37,51 @@ from . import AppObjects
 
 
 def toIdentifier(toId: str, toUnder:set={'-',' '}): return ''.join(['_'*(c in toUnder) or c*(c.isidentifier()) for c in toId])
+def toHtml(string:str): return string.replace('&','&amp').replace("'",'&apos').replace('"','&quot').replace('<','&lt').replace('>','&gt;')
+
+
+basestring = (str, bytes, bytearray)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def isIterable(item): return (isinstance(item, Iterable) and not isinstance(item, basestring))
+
 
 def exists(obj):return obj is not None
 def ifDelete(obj:adsk.core.CommandControl): return obj.deleteMe() if exists(obj) and obj.isValid else False
 def getDelete(collection:adsk.core.CommandDefinitions,objId): ifDelete(collection.itemById(objId))
 def deleteAll(*objs): return all(map(ifDelete,objs))
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+class ContextManager:
+	"""A generic context manager that functions as a decorator too"""
+	def __init__(self): pass
+	def __call__(self): return self
+	def __enter__(self): return self
+	def __exit__(self,ExType,ExVal,ExTrace):
+		return False
 
 
+def listAppend(list:list,appendObj):
+	"""Syntatic sugar. This appends the obj to the list and returns it."""
+	if appendObj: list.append(appendObj); return appendObj
 
 
 
 def short_class(obj:adsk.core.Base):
-    '''Returns shortened name of Object class'''
-    return obj.classType().split('::')[-1]
+	'''Returns shortened name of Object class'''
+	return obj.classType().split('::')[-1]
 
-_DEPLOY_FOLDER_PATTERN = re.compile(r'.*/webdeploy/production/[^/]+')
-def get_fusion_deploy_folder():
-    ''' Get the Fusion 360 deploy folder.
-
-    Typically:
-     * Windows: C:/Users/<user>/AppData/Local/Autodesk/webdeploy/production/<hash>
-     * Mac: /Users/<user>/Library/Application Support/Autodesk/webdeploy/production/<hash>
-
-    NOTE! The structure within the deploy folder is not the same on Windows and Mac!
-    E.g. see the examples for get_fusion_ui_resource_folder().    '''
-    # Strip the suffix from the UI resource folder, i.e.:
-    # Windows: /Fusion/UI/FusionUI/Resources
-    # Mac: /Autodesk Fusion 360.app/Contents/Libraries/Applications/Fusion/Fusion/UI/FusionUI/Resources
-    return _DEPLOY_FOLDER_PATTERN.match(get_fusion_ui_resource_folder()).group(0)
-
-_resFolder = None
-def get_fusion_ui_resource_folder():
-    '''
-    Get the Fusion UI resource folder. Note: Not all resources reside here.
-
-    Typically:
-     * Windows: C:/Users/<user>/AppData/Local/Autodesk/webdeploy/production/<hash>/Fusion/UI/FusionUI/Resources
-     * Mac: /Users/<user>/Library/Application Support/Autodesk/webdeploy/production/<hash>/Autodesk Fusion 360.app/Contents/Libraries/Applications/Fusion/Fusion/UI/FusionUI/Resources
-    '''
-    global _resFolder
-    if not _resFolder:
-        _resFolder = AppObjects.GetUi().workspaces.itemById('FusionSolidEnvironment').resourceFolder.replace('/Environment/Model', '')
-    return _resFolder
 
 def get_caller_path():
-    '''Gets the filename of the file calling the function
-    that called this function. That is, is nested in "two steps". '''
-    return os.path.abspath(inspect.stack(0)[2][1])
+	'''Gets the filename of the file calling the function
+	that called this function. That is, is nested in "two steps". '''
+	return os.path.abspath(inspect.stack(0)[2][1])
 
 def get_file_path():
-    '''Gets the filename of the function that called this function.'''
-    return os.path.abspath(inspect.stack(0)[1][1])
+	'''Gets the filename of the function that called this function.'''
+	return os.path.abspath(inspect.stack(0)[1][1])
 
 def get_file_dir():
-    '''Gets the directory containing the file which function called this function.'''
-    return os.path.dirname(os.path.abspath(inspect.stack(0)[1][1]))
+	'''Gets the directory containing the file which function called this function.'''
+	return os.path.dirname(os.path.abspath(inspect.stack(0)[1][1]))
 
 # Allows for re-import of multiple modules
 def ReImport_List(*args): map(importlib.reload, args)
@@ -112,11 +103,14 @@ def is_parametric_mode():
 	except: return False
 
 
-#This is a context manager that just ignores what happens
 
-# def AppObjects(): return GetApp(),GetUi()
-# def GetApp(): return adsk.core.Application.cast(adsk.core.Application.get())
-# def GetUi(): return GetApp().userInterface
+def CheckWorkspace(obj:adsk.core.Workspace):
+	#Tying to get its panels can throw an error
+	try: return obj.toolbarPanels and (obj.productType != '')
+	except: return False
+
+
+def GetCommandIcon(commandId:str): return AppObjects.GetUi().commandDefinitions.itemById(commandId).resourceFolder
 
 
 
@@ -133,9 +127,21 @@ class CustomEvents:
 	def Remove(CustomEventID:str):
 		return AppObjects.GetApp().unregisterCustomEvent(CustomEventID)
 
+	def RemoveAll(CustomEventIDs:'list[str]'):
+		return all(map(CustomEvents.Remove, CustomEventIDs))
 
 
 
+def TextCommands()->adsk.core.TextCommandPalette:return AppObjects.GetUi().palettes.itemById('TextCommands')
+
+def AppLog(*printString:str): return AppObjects.GetApp().log('\n'.join(map(str,printString)))
+def UiLog(*printString:str): return AppObjects.GetUi().messageBox('\n'.join(map(str,printString)))
+def DebugLog(*printString:str):print(*printString)
+
+def FullLog(*printString:str): 
+	AppLog(*printString)
+	UiLog(*printString)
+	DebugLog(*printString)
 
 
 
@@ -145,7 +151,6 @@ class Scripts:
 	"""Wrapper for adsk autoTerminate/terminate used in scripts"""
 	def DontTerminate(): return adsk.autoTerminate(False)
 	def Terminate(): return adsk.terminate()
-
 def doEvents(): return adsk.doEvents()
 
 
@@ -173,8 +178,9 @@ class Ignore:
 
 
 # From https://stackoverflow.com/a/25476462/106019
-def copy_to_clipboard(string):
+def copy_to_clipboard(string, displayMessage = False):
 	r = Tk(); r.withdraw()
 	r.clipboard_clear(); r.clipboard_append(string)
 	r.update(); r.destroy() 
 	# now it stays on the clipboard after the window is closed
+	if displayMessage: AppObjects.GetUi().messageBox('Copied to clipboard')
