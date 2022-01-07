@@ -55,7 +55,7 @@ def buildHandler(event:str)-> 'adsk.core.EventHandler':
 
 #Data Containers
 class LinkedHandler:
-	def __init__(self, event: adsk.core.CommandEvent, handler:type,manager:'EventsManager'=None,callback:callable=None):
+	def __init__(self, event: adsk.core.CommandEvent, handler:type,manager:'EventsManager'=None,callback:'function'=None):
 		self.event = event
 		self.handler = handler
 		self.callback = callback
