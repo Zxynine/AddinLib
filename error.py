@@ -81,8 +81,9 @@ class ErrorCatcher():
 		message = GetMessage(self.msg_prefix, value, self.caller_file, app.version, tb_str)
 		print(message)
 
-		in_debugger = hasattr(sys,'gettrace') and sys.gettrace()
+		in_debugger = hasattr(sys, 'gettrace') and sys.gettrace()
 		if ui and (not in_debugger or self.msgbox_in_debug):
+			print("Also showed in message box.")
 			ui.messageBox(message)
 		else: print("Not shown in message box.")
 		return True # Exception handled
