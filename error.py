@@ -62,8 +62,8 @@ class ErrorCatcher():
 			with error_catcher_:
 				code that can throw
 	'''
-	def __init__(self, msgbox_in_debug=False, msg_prefix=''):
-		self.msgbox_in_debug = msgbox_in_debug
+	def __init__(self, BlockMsgboxInDebug=False, msg_prefix=''):
+		self.BlockMsgboxInDebug = BlockMsgboxInDebug
 		self.msg_prefix = msg_prefix
 
 	def __call__(self, func, blockFuncSelf=False):
@@ -81,9 +81,8 @@ class ErrorCatcher():
 		message = GetMessage(self.msg_prefix, value, self.caller_file, app.version, tb_str)
 		print(message)
 
-		in_debugger = hasattr(sys, 'gettrace') and sys.gettrace()
-		if ui and (not in_debugger or self.msgbox_in_debug):
-			print("Also showed in message box.")
+		in_debugger = hasattr(sys,'gettrace') and sys.gettrace()
+		if ui and (not in_debugger or self.BlockMsgboxInDebug):
 			ui.messageBox(message)
 		else: print("Not shown in message box.")
 		return True # Exception handled
