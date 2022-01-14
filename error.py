@@ -93,3 +93,12 @@ class ErrorCatcher():
 # 	def catcher(func_self, args):
 # 		with class_self_Ref.error_catcher: func(args)
 # 	return catcher
+
+
+
+class Ignore:
+	def __init__(self, *types): self.types=types
+	def __enter__(self):return self
+	def __exit__(self,ExType,ExVal,ExTrace): 
+		return self.types or ExType in self.types
+
