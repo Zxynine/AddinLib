@@ -184,3 +184,10 @@ def copy_to_clipboard(string, displayMessage = False):
 	r.update(); r.destroy() 
 	# now it stays on the clipboard after the window is closed
 	if displayMessage: AppObjects.GetUi().messageBox('Copied to clipboard')
+
+
+
+	
+def MessagePromptCast(messageText, messageBoxTitle, buttonType=adsk.core.MessageBoxButtonTypes.YesNoCancelButtonType, iconType=adsk.core.MessageBoxIconTypes.QuestionIconType):
+	dialogResult = AppObjects.GetUi().messageBox(messageText, messageBoxTitle, buttonType, iconType) 
+	return {adsk.core.DialogResults.DialogYes:True,adsk.core.DialogResults.DialogNo:False}.get(dialogResult, None)

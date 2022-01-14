@@ -99,3 +99,10 @@ def readDataFromFile(customPathFile, isJson = False):
 #         except FileNotFoundError:
 #             self.settings = self.default_values
 #             self.write()
+
+
+def fromJson(JsonObject: object, typeToFunc:'dict[type,function]'):
+	if type(JsonObject) is str: JsonObject = json.loads(JsonObject)
+	MacroMethod = typeToFunc.get(type(JsonObject),None)
+	if MacroMethod is None: raise TypeError(f'Could not find a function for type:"{type(JsonObject)}"')
+	return MacroMethod(JsonObject)
