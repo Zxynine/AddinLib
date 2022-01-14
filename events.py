@@ -28,8 +28,7 @@
 # SOFTWARE.
 
 import adsk.core, adsk.fusion, adsk.cam
-import sys, time
-import threading
+import sys, time, threading
 # Avoid Fusion namespace pollution
 from . import error, utils
 
@@ -128,7 +127,7 @@ class EventsManager:
 		def fireEvent():self.CustomEvents.Fire(self.delayed_event_id, str(delay_id))
 
 		if secs <= 0: return fireEvent()
-		thread = DelayThread(target=fireEvent, delayTime=secs,autoStart=True)
+		else: thread = DelayThread(target=fireEvent, delayTime=secs,autoStart=True)
 
 	def _delayed_event_handler(self, args: adsk.core.CustomEventArgs):
 		delay_id = int(args.additionalInfo)
@@ -141,7 +140,7 @@ class EventsManager:
 	#Removes one or many
 	def remove_handler(self, handler_info: LinkedHandler):
 		handler_info.remove();self.handlers.remove(handler_info)
-	def remove_handlers(self, *handler_infos: 'list[LinkedHandler]'):
+	def remove_handlers(self, *handler_infos: LinkedHandler):
 		map(self.remove_handler, handler_infos)
 
 	#Removes ALL
@@ -158,7 +157,7 @@ class EventsManager:
 		self.CustomEvents.RemoveAll(self.custom_event_names)
 		self.custom_event_names.clear()
 
-	def clean_up(self, oldControl = None):
+	def clean_up(self):
 		self.remove_all_handlers()
 		self.unregister_all_events()
 

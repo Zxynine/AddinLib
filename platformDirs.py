@@ -5,17 +5,6 @@ import subprocess
 import tempfile
 
 
-# def StringInstantiator(count): return ['']*count
-# (USER_DIR, DESKTOP_DIR, TEMP_DIR, APPDATA_DIR, LOCAL_APPDATA_DIR, 
-# USERDATA_DIR, USERDATA_DIR, PYTHON_DIR, 
-# AUTODESK_DIR, AUTODESK_LOCAL_DIR, API_PYTHON_DIR, 
-# FUSION_DIR, FUSION_CPP_DIR, FUSION_PYTHON_DIR, FUSION_RES_DIR, 
-# PLUGINS_DIR, SCRIPTS_DIR, ADDINS_DIR,NEUTRON_OPTIONS) = StringInstantiator(19)
-
-
-
-
-
 def getOS() -> str:
 	osMap = dict( 	Windows='Windows',	win32='Windows',
 					Darwin='Darwin',	Linux='Linux')
