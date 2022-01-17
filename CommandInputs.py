@@ -75,7 +75,7 @@ class CommandInputs(adsk.core.CommandInputs):
 
 
 
-
+	def addMoveCommandInput(self, id,name): return MoveCommandInput(self, id,name)
 
 
 
@@ -99,7 +99,7 @@ class TextBoxCommandInput(adsk.core.TextBoxCommandInput):
 		self._baseText_ = WrapObj.formattedText
 		self.alignment = alignment
 		self.parent.isFullWidth = True
-
+	
 	@property
 	def formattedText(self): return self._baseText_
 	@formattedText.setter
@@ -113,3 +113,25 @@ class TextBoxCommandInput(adsk.core.TextBoxCommandInput):
 	def alignment(self, setVal):
 		self._alignment_ = setVal
 		self.formattedText = self._baseText_
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+class MoveCommandInput(adsk.core.CommandInput):
+	commandInputs=id=name = None
+	def __init__(self, inputs:CommandInputs,id:str,name:str):
+		self.commandInputs = inputs
+		self.id,self.name = id,name
+		self.origin = adsk.core.Vector3D.create()
+
+
+
+		self.groupInput = inputs.addGroupCommandInput(id,name)
+		self.children = CommandInputs(self.groupInput.children)
+
+		self.selectionInput = self.children.addSelectionInput(f'{id}_Selection','Selection','')
+
+		self.originInput = self.children.addButtonInput(f'{id}_ChangeOrigin','Set Pivot')
+
+		self.XDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_XDistance', 'X Distance',adsk.core.ValueInput.createByString('0.0mm'))
+		self.YDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_YDistance', 'Y Distance',adsk.core.ValueInput.createByString('0.0mm'))
+		self.ZDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_ZDistance', 'Z Distance',adsk.core.ValueInput.createByString('0.0mm'))

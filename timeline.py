@@ -118,5 +118,6 @@ class GroupManager:
 		return self.timeline
 	def __exit__(self, ExType, ExVal, ExTrace):
 		if not (self.isParametric and ExType is None): return False
+		if int(self.timeline.markerPosition)-int(self.startIndex) <= 0: return 
 		timelineObj = self.timeline.timelineGroups.add(int(self.startIndex), int(self.timeline.markerPosition)-1)
 		timelineObj.name = self.groupName

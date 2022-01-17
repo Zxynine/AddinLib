@@ -82,3 +82,16 @@ class vectors:
 		newVec.normalize()
 		newVec.scaleBy(scale)
 		return newVec
+
+
+
+
+
+class translate:
+	def __new__(cls,transform:adsk.core.Matrix3D=None,x:float=0.0,y:float=0.0,z:float=0.0, inMM=True) -> adsk.core.Matrix3D:
+		if transform is None: transform = adsk.core.Matrix3D.create()
+		if inMM: x,y,z = x/10,y/10,z/10
+		translation = adsk.core.Vector3D.create(x,y,z)
+		transform.translation = translation
+		return transform
+	create = __new__

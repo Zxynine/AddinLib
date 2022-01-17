@@ -28,7 +28,7 @@ import adsk.core, adsk.fusion, adsk.cam
 import inspect
 import os, json
 import importlib
-from typing import Iterable
+from typing import Generic, Iterable, Type, TypeVar
 from tkinter import Tk
 
 from . import AppObjects
@@ -157,7 +157,7 @@ def doEvents(): return adsk.doEvents()
 class camera:
 	def get(): return AppObjects.GetApp().activeViewport.camera
 	
-	def viewDirection(camera_copy:adsk.core.Camera):
+	def viewDirection(camera_copy:adsk.core.Camera=None):
 		camera_copy = camera_copy or camera.get()
 		return camera_copy.eye.vectorTo(camera_copy.target)
 
@@ -191,3 +191,41 @@ def copy_to_clipboard(string, displayMessage = False):
 def MessagePromptCast(messageText, messageBoxTitle, buttonType=adsk.core.MessageBoxButtonTypes.YesNoCancelButtonType, iconType=adsk.core.MessageBoxIconTypes.QuestionIconType):
 	dialogResult = AppObjects.GetUi().messageBox(messageText, messageBoxTitle, buttonType, iconType) 
 	return {adsk.core.DialogResults.DialogYes:True,adsk.core.DialogResults.DialogNo:False}.get(dialogResult, None)
+
+
+
+
+class Collections:
+	def fromIterable(iterable:list):
+		return Collections.extend(adsk.core.ObjectCollection.create(), iterable)
+
+	def join(*iterables:list):
+		collection:adsk.core.ObjectCollection = adsk.core.ObjectCollection.create()
+		[Collections.extend(collection,iterable) for iterable in iterables]
+		return collection
+
+	def extend(collection:adsk.core.ObjectCollection, iterable:list):
+		for item in iterable: collection.add(item)
+		return collection
+	
+class Iter:
+	"""This is a more powerful version of the `range` function. It will function the same as range unless
+	given an iterable object, which it will then function as `range(len(iterable))`. It also supports an iterable
+	with a specific start index (pos or neg) or end index (only neg) which functions like list access. See examples:
+	```
+		iterable = 'abcdef' #6 long
+
+		Iter(iterable)    -> [0,1,2,3,4,5]
+		Iter(2,iterable)  -> [2,3,4,5]
+		Iter(-2,iterable) -> [-2,-1,0,1,2,3,4,5]
+		Iter(iterable,-2) -> [0,1,2,3]
+	```"""
+	def __new__(cls,Start:any=0,Stop:any=0,Step=1):
+		I,II,III = [I if type(I) is int else len(I) for I in (Start,Stop,Step)]
+		return range(*(I*(II>0),((abs(I))*(II<=0))+II),III)
+		
+
+class Items:
+	"""Function to use on iterating through fusion collections. They typically do not return a type hinted object
+	when using bracket access, this works around that by using an index and the collections `.item()` fucntion."""
+	def __new__(cls,testobj): return [testobj.item(i) for i in Iter(testobj)]
