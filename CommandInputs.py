@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 import adsk.core, adsk.fusion, adsk.cam
-from . import utils
+from . import utils,geometry
 
 Name = str
 IconPath = str
@@ -120,8 +120,9 @@ class MoveCommandInput(adsk.core.CommandInput):
 	commandInputs=id=name = None
 	def __init__(self, inputs:CommandInputs,id:str,name:str):
 		self.commandInputs = inputs
+		self.command = inputs.command
 		self.id,self.name = id,name
-		self.origin = adsk.core.Vector3D.create()
+		self.origin = geometry.points.Zero
 
 
 
@@ -129,9 +130,16 @@ class MoveCommandInput(adsk.core.CommandInput):
 		self.children = CommandInputs(self.groupInput.children)
 
 		self.selectionInput = self.children.addSelectionInput(f'{id}_Selection','Selection','')
+		self.selectionInput.setSelectionLimits(1,1)
 
-		self.originInput = self.children.addButtonInput(f'{id}_ChangeOrigin','Set Pivot')
-
+		self.originInput = self.children.addButtonInput(f'{id}_ChangeOrigin','Set Pivot', '././resources/repeat')
+		
 		self.XDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_XDistance', 'X Distance',adsk.core.ValueInput.createByString('0.0mm'))
 		self.YDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_YDistance', 'Y Distance',adsk.core.ValueInput.createByString('0.0mm'))
 		self.ZDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_ZDistance', 'Z Distance',adsk.core.ValueInput.createByString('0.0mm'))
+		self.XDistanceInput.setManipulator(self.origin,geometry.vectors.X)
+		self.YDistanceInput.setManipulator(self.origin,geometry.vectors.Y)
+		self.ZDistanceInput.setManipulator(self.origin,geometry.vectors.Z)
+		
+		self.BasisVectors = geometry.vectors.XYZ()
+		self.DeltaPoint:adsk.core.Point3D = geometry.points.Zero
