@@ -129,7 +129,7 @@ class vectors:
 
 
 class points:
-	Zero = adsk.core.Point3D.create(0,0,0)
+	Zero:adsk.core.Point3D = adsk.core.Point3D.create(0,0,0)
 	def copy(point:adsk.core.Point3D, offset:adsk.core.Vector3D=Zero):
 		ptCopy = point.copy()
 		ptCopy.translateBy(offset)

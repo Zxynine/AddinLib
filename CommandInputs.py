@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 import adsk.core, adsk.fusion, adsk.cam
-from . import utils,geometry
+from . import utils,geometry,events
 
 Name = str
 IconPath = str
@@ -123,8 +123,8 @@ class MoveCommandInput(adsk.core.CommandInput):
 		self.command = inputs.command
 		self.id,self.name = id,name
 		self.origin = geometry.points.Zero
-
-
+		self.eventManager = events.EventsManager()
+		self.currentlySelecting = False
 
 		self.groupInput = inputs.addGroupCommandInput(id,name)
 		self.children = CommandInputs(self.groupInput.children)
@@ -142,4 +142,34 @@ class MoveCommandInput(adsk.core.CommandInput):
 		self.ZDistanceInput.setManipulator(self.origin,geometry.vectors.Z)
 		
 		self.BasisVectors = geometry.vectors.XYZ()
-		self.DeltaPoint:adsk.core.Point3D = geometry.points.Zero
+		self.DeltaPoint:adsk.core.Point3D = geometry.points.Zero.copy()
+
+		def MoveCommandInputHandler(args:adsk.core.InputChangedEventArgs):
+			changedId = args.input.id
+			if not changedId.startswith(self.id):return
+					
+			if changedId == self.originInput.id: 
+				self.toggleOriginSelect()
+					
+			DistanceInputs = (self.XDistanceInput,self.YDistanceInput,self.ZDistanceInput)
+			Deltas = [geometry.vectors.scaledBy(self.BasisVectors[i],DistanceInputs[i].value) for i in range(3)]
+			self.DeltaPoint.translateBy(geometry.vectors.sum(*Deltas))
+			ChangedDelta :adsk.core.Vector3D =  None
+			for index,DistanceInput in enumerate(DistanceInputs):
+				if changedId != DistanceInput.id:
+					DistanceInput.value = 0
+					DistanceInput.setManipulator(self.DeltaPoint,self.BasisVectors[index])				
+				else: ChangedDelta = Deltas[index].copy()
+			if ChangedDelta: geometry.points.subtract(self.DeltaPoint,ChangedDelta)
+		self.eventManager.add_handler(self.command.inputChanged, MoveCommandInputHandler)
+		
+		
+	def toggleOriginSelect(self):
+		self.currentlySelecting = not self.currentlySelecting
+		newIcon = {True:"./resources/save", False:"./resources/repeat"}.get(self.currentlySelecting)
+		self.originInput.resourceFolder = newIcon
+		XYZ:'tuple[adsk.core.Vector3D,adsk.core.Vector3D,adsk.core.Vector3D]' = geometry.vectors.XYZ()
+		X,Y,Z = XYZ
+		R = geometry.Matrix.rotation(Z,adsk.core.Vector3D.create(0.5,0.5,0.5))
+		geometry.Matrix.apply(R,X,Y,Z)
+		self.BasisVectors = (X,Y,Z)
