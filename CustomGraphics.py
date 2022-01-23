@@ -78,7 +78,8 @@ def getAppearancesFromLib(libName, filterExp:str):
 
 TransparentRed = Colour.create(255,0,0,50)
 RemovalRed = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(TransparentRed,0.25)
-
+SolidBlue = Colour.create(50,100,175,255)
+SelectedBlue = adsk.fusion.CustomGraphicsShowThroughColorEffect.create(SolidBlue,0.25)
 
 
 
@@ -89,13 +90,13 @@ def ClearCustomGraphics(root:adsk.fusion.Component,returnNew=False):
 	if returnNew:return root.customGraphicsGroups.add()
 
 
-def CustomGraphicMeshFromBRep(graphics:adsk.fusion.CustomGraphicsGroup, object:adsk.fusion.BRepBody):
+def MeshFromBRep(graphics:adsk.fusion.CustomGraphicsGroup, object:adsk.fusion.BRepBody,colour:Colour=None):
 	objectGroup = graphics.addGroup()
 	allMeshes:list[adsk.fusion.TriangleMesh] = object.meshManager.displayMeshes
 	for mesh in allMeshes:
 		meshCoords = adsk.fusion.CustomGraphicsCoordinates.create(mesh.nodeCoordinatesAsDouble)
 		graphicObj = objectGroup.addMesh(meshCoords,mesh.nodeIndices, [],[])
-		graphicObj.color = RemovalRed
+		if colour: graphicObj.color = colour
 	return objectGroup
 
 
