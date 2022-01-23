@@ -106,7 +106,7 @@ def get_occurrence_type(timeline_obj:adsk.fusion.TimelineObject):
 
 
 class GroupManager:
-	"""A context manager that lets you easily group timeline actions. Just use "`with Groupmanager('GroupName'):`" before any actions"""
+	"""A context manager that lets you easily group timeline actions. Just use "with Groupmanager('GroupName'):" before any actions"""
 	def __init__(self, groupName, timeline:adsk.fusion.Timeline = None):
 		self.isParametric = AppObjects.is_parametric_mode()
 		if not self.isParametric: return
@@ -118,6 +118,6 @@ class GroupManager:
 		return self.timeline
 	def __exit__(self, ExType, ExVal, ExTrace):
 		if not (self.isParametric and ExType is None): return False
-		if int(self.timeline.markerPosition)-int(self.startIndex) <= 0: return 
+		if int(self.timeline.markerPosition)-int(self.startIndex) <= 1: return #At least two features needed for a group
 		timelineObj = self.timeline.timelineGroups.add(int(self.startIndex), int(self.timeline.markerPosition)-1)
 		timelineObj.name = self.groupName

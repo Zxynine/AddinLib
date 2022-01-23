@@ -22,13 +22,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+from __future__ import annotations
 import adsk.core, adsk.fusion, adsk.cam
 
 import inspect
 import os, json
 import importlib
-from typing import Generic, Iterable, Type, TypeVar
+from typing import Generic, Iterable, Type, TypeVar,Callable
 from tkinter import Tk
 
 from . import AppObjects
@@ -224,8 +224,9 @@ class Iter:
 		I,II,III = [I if type(I) is int else len(I) for I in (Start,Stop,Step)]
 		return range(*(I*(II>0),((abs(I))*(II<=0))+II),III)
 		
-
+FuncReturn = TypeVar('FuncReturn')
 class Items:
 	"""Function to use on iterating through fusion collections. They typically do not return a type hinted object
 	when using bracket access, this works around that by using an index and the collections `.item()` fucntion."""
 	def __new__(cls,testobj): return [testobj.item(i) for i in Iter(testobj)]
+	def custom(func:Callable[...,FuncReturn],size:int)->list[FuncReturn]:return [func(i) for i in range(size)]

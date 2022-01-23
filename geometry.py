@@ -140,18 +140,6 @@ class points:
 		minuhend.translateBy(invSub)
 		return minuhend
 
-
-class translate:
-	def __new__(cls,transform:adsk.core.Matrix3D=None,x:float=0.0,y:float=0.0,z:float=0.0, inMM=True) -> adsk.core.Matrix3D:
-		if transform is None: transform = adsk.core.Matrix3D.create()
-		if inMM: x,y,z = x/10,y/10,z/10
-		translation = vectors.new(x,y,z)
-		transform.translation = translation
-		return transform
-	create = __new__
-
-
-
 class Matrix:
 	def translation(translation:adsk.core.Vector3D, transform:adsk.core.Matrix3D=None):
 		if transform is None: transform = adsk.core.Matrix3D.create()
@@ -167,25 +155,3 @@ class Matrix:
 
 	def apply(matrix:adsk.core.Matrix3D,*vectors:adsk.core.Vector3D):
 		for vector in vectors: vector.transformBy(matrix)
-
-	# #https://www.theochem.ru.nl/~pwormer/Knowino/knowino.org/wiki/Rotation_matrix.html#Vector_rotation
-	# def rotation(oldDirection:adsk.core.Vector3D, newDirection:adsk.core.Vector3D):
-	# 	oldDirection = vectors.normalOf(oldDirection)
-	# 	newDirection = vectors.normalOf(newDirection)
-
-	# 	U=oldDirection.crossProduct(newDirection)
-	# 	# S=vectors.normalOf(U).length	#Sin of angle
-	# 	C=oldDirection.dotProduct(newDirection)	#Cos of angle
-
-	# 	H=((1-C)/(1-(C**2)))
-
-	# 	CHD = vectors.applyFunction(U.copy(), lambda a:(H*(a**2))+C)
-	# 	HUX,HUY,HUZ = (H*U.y*U.z),(H*U.x*U.z),(H*U.x*U.y)
-
-	# 	R:adsk.core.Matrix3D = adsk.core.Matrix3D.create()
-	# 	R.setWithArray((
-	# 		CHD.x,		HUZ-U.z,	HUY+U.y,	0,
-	# 		HUZ+U.z,	CHD.y,		HUX-U.x,	0,
-	# 		HUY-U.y, 	HUX+U.x,	CHD.z,		0,
-	# 		0,			0,			0,			1))
-	# 	return R

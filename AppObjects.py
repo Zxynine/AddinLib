@@ -36,7 +36,7 @@ def GetUi(): return GetApp().userInterface
 
 def GetDocument()->adsk.core.Document: return GetApp().activeDocument
 def GetCam()->adsk.cam.CAM: return GetDocument().products.itemByProductType('CAMProductType')
-def GetDesign()->adsk.fusion.Design: GetDocument().products.itemByProductType('DesignProductType')
+def GetDesign()->adsk.fusion.Design: return GetDocument().products.itemByProductType('DesignProductType')
 def GetRoot()->adsk.fusion.Component: return GetDesign().rootComponent
 
 def is_parametric_mode():
@@ -47,7 +47,6 @@ def is_parametric_mode():
 		if GetUi().activeWorkspace.id == 'FusionSolidEnvironment':
 			design = GetDesign()
 			return bool(design and design.designType == adsk.fusion.DesignTypes.ParametricDesignType)
-		else:return False
 	except: return False
 
 
