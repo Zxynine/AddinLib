@@ -29,7 +29,7 @@ import inspect
 import os, json
 import importlib
 from typing import Generic, Iterable, Type, TypeVar,Callable
-from tkinter import Tk
+# from tkinter import Tk
 
 from . import AppObjects
 
@@ -177,13 +177,13 @@ class Ignore:
 
 
 
-# From https://stackoverflow.com/a/25476462/106019
-def copy_to_clipboard(string, displayMessage = False):
-	r = Tk(); r.withdraw()
-	r.clipboard_clear(); r.clipboard_append(string)
-	r.update(); r.destroy() 
-	# now it stays on the clipboard after the window is closed
-	if displayMessage: AppObjects.GetUi().messageBox('Copied to clipboard')
+# # From https://stackoverflow.com/a/25476462/106019
+# def copy_to_clipboard(string, displayMessage = False):
+# 	r = Tk(); r.withdraw()
+# 	r.clipboard_clear(); r.clipboard_append(string)
+# 	r.update(); r.destroy() 
+# 	# now it stays on the clipboard after the window is closed
+# 	if displayMessage: AppObjects.GetUi().messageBox('Copied to clipboard')
 
 
 
