@@ -22,9 +22,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-import adsk.core, adsk.fusion, adsk.cam
-
+from __future__ import annotations
+import adsk.core, adsk.fusion
+from. import AppObjects,utils
 
 
 # class ReferenceBase:
@@ -57,3 +57,61 @@ import adsk.core, adsk.fusion, adsk.cam
 # 		super().__init__(cmdDef, parentControls.addCommand(cmdDef))
 # 	@property
 # 	def value(self):return self.controlDefinition.isChecked
+
+
+# class UiObject:
+# 	def __init__(self, id:str,name:str):
+# 		self.id = id
+# 		self.name = name
+
+# class Workspace:
+# 	def __init__(self,workspace:adsk.core.Workspace):
+# 		self.referance = workspace
+# 		self.id = workspace.id
+# 		self.name = workspace.name
+		
+# class Toolbars:
+# 	def __init__(self):
+# 		pass
+# class Tab:
+# 	def __init__(self):
+# 		pass
+# class Panel:
+# 	def __init__(self):
+# 		pass
+# class Control:
+# 	def __init__(self):
+# 		pass
+
+
+def TryGet(collection):
+	for I in range(len(collection)):
+		try: yield collection.item(I)
+		except:pass
+
+def GetUi():
+	app,ui = AppObjects.GetAppUI()
+
+	UiToolbars = list(TryGet(ui.toolbars))
+	UiWorkspaces = list(TryGet(ui.workspaces))
+	UiTabs : list[adsk.core.ToolbarTab]=[]
+	UiPanels : list[adsk.core.ToolbarPanel]=[]
+	UiControls : list[adsk.core.ToolbarControl]=[]
+
+	UiWorkspaces = [workspace for workspace in UiWorkspaces if utils.CheckWorkspace(workspace)]
+
+	
+	for workspace in UiWorkspaces:
+		tabs = list(TryGet(workspace.toolbarTabs))
+		UiTabs.append(tabs)
+		for tab in tabs:
+			panels = list(TryGet(tab.toolbarPanels))
+			UiPanels.append(panels)
+			controlIds = ''
+			for panel in panels:
+				controls = list(TryGet(panel.controls))
+				UiControls.append(controls)
+				
+				controlIds += str((panel.name,[control.id for control in controls]))+'\t\n'
+			ui.messageBox(controlIds)
+

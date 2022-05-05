@@ -196,6 +196,11 @@ def MessagePromptCast(messageText, messageBoxTitle, buttonType=adsk.core.Message
 
 
 class Collections:
+	def single(item:any):
+		collection:adsk.core.ObjectCollection = adsk.core.ObjectCollection.create()
+		collection.add(item)
+		return collection
+
 	def fromIterable(iterable:list):
 		return Collections.extend(adsk.core.ObjectCollection.create(), iterable)
 

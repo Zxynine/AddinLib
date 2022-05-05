@@ -113,67 +113,18 @@ class TextBoxCommandInput(adsk.core.TextBoxCommandInput):
 	def alignment(self, setVal):
 		self._alignment_ = setVal
 		self.formattedText = self._baseText_
-
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# class MoveCommandInput(adsk.core.CommandInput):
-# 	commandInputs=id=name = None
-# 	def __init__(self, inputs:CommandInputs,id:str,name:str):
-# 		self.commandInputs = inputs
-# 		self.command = inputs.command
-# 		self.id,self.name = id,name
-# 		self.origin = geometry.points.Zero
-# 		self.eventManager = events.EventsManager()
-# 		self.currentlySelecting = False
+class ObjectSelectionInput(adsk.core.SelectionCommandInput):
+	def __init__(self,WrapObj:adsk.core.SelectionCommandInput):
+		self.__dict__ = WrapObj.__dict__
+		self.parent = WrapObj
+	
+	@property
+	def entities(self):return [self.selection(i).entity for i in range(self.selectionCount)]
 
-# 		self.groupInput = inputs.addGroupCommandInput(id,name)
-# 		self.children = CommandInputs(self.groupInput.children)
 
-# 		self.selectionInput = self.children.addSelectionInput(f'{id}_Selection','Selection','')
-# 		self.selectionInput.setSelectionLimits(1,1)
-
-# 		self.originInput = self.children.addButtonInput(f'{id}_ChangeOrigin','Set Pivot', '././resources/repeat')
-		
-# 		self.XDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_XDistance', 'X Distance',adsk.core.ValueInput.createByString('0.0mm'))
-# 		self.YDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_YDistance', 'Y Distance',adsk.core.ValueInput.createByString('0.0mm'))
-# 		self.ZDistanceInput= self.children.addDistanceValueCommandInput(f'{id}_ZDistance', 'Z Distance',adsk.core.ValueInput.createByString('0.0mm'))
-# 		self.XDistanceInput.setManipulator(self.origin,geometry.vectors.X)
-# 		self.YDistanceInput.setManipulator(self.origin,geometry.vectors.Y)
-# 		self.ZDistanceInput.setManipulator(self.origin,geometry.vectors.Z)
-# 		self.DistanceInputs = (self.XDistanceInput,self.YDistanceInput,self.ZDistanceInput)
-		
-# 		self.BasisVectors = geometry.vectors.XYZ()
-# 		self.DeltaPoint:adsk.core.Point3D = geometry.points.Zero.copy()
-
-# 		def MoveCommandInputHandler(args:adsk.core.InputChangedEventArgs):
-# 			changedId = args.input.id
-# 			if not changedId.startswith(self.id):return
-					
-# 			if changedId == self.originInput.id: self.toggleOriginSelect()
-					
-# 			Deltas = [geometry.vectors.scaledBy(self.BasisVectors[i],self.DistanceInputs[i].value) for i in range(3)]
-# 			self.DeltaPoint.translateBy(geometry.vectors.sum(*Deltas))
-# 			ChangedDelta :adsk.core.Vector3D =  None
-# 			for index,DistanceInput in enumerate(self.DistanceInputs):
-# 				if changedId != DistanceInput.id:
-# 					DistanceInput.value = 0
-# 					DistanceInput.setManipulator(self.DeltaPoint,self.BasisVectors[index])		
-# 				else: ChangedDelta = Deltas[index].copy()
-# 			if ChangedDelta: geometry.points.subtract(self.DeltaPoint,ChangedDelta)
-# 		self.eventManager.add_handler(self.command.inputChanged, MoveCommandInputHandler)
-		
-		
-# 	def toggleOriginSelect(self):
-# 		self.currentlySelecting = not self.currentlySelecting
-# 		newIcon = {True:"./resources/save", False:"./resources/repeat"}.get(self.currentlySelecting)
-# 		self.originInput.resourceFolder = newIcon
-# 		XYZ:'tuple[adsk.core.Vector3D,adsk.core.Vector3D,adsk.core.Vector3D]' = geometry.vectors.XYZ()
-# 		X,Y,Z = XYZ
-# 		R = geometry.Matrix.rotation(Z,adsk.core.Vector3D.create(0.5,0.5,0.5))
-# 		geometry.Matrix.apply(R,X,Y,Z)
-# 		self.BasisVectors = (X,Y,Z)
-
-# 	def DistanceVector(self)->adsk.core.Vector3D: return self.origin.vectorTo(self.DeltaPoint)
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 class TransformValueInput:
